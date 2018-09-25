@@ -1,0 +1,146 @@
+import Vue from 'vue';
+import router from '../../routes';
+const alertify = require('alertify.js');
+
+const module = {
+    state: {
+        data: [],
+        data_search: {},
+        button_loading: false,
+        spinner_loading: false,
+    },
+    actions: {
+
+        /**
+         * Get all movies
+         * 
+         * @param {*} commit object 
+         * @param id int id 
+         */
+        GET_MOVIES({commit}) {
+            commit('SPINER_LOAD');
+            axios.get('/api/admin/get/movies').then(response => {
+                if(response.status === 200){                    
+                    commit('SET_MOVIES', response.data.data);
+                    commit('SPINER_CLEAN');
+               }
+            });
+        },
+
+        GET_MOVIE({commit}, id) {
+            commit('SPINER_LOAD');
+            axios.get('/api/admin/get/movie/' + id).then(response => {
+                if(response.status === 200){                    
+                    commit('SET_MOVIES', response.data.data);
+                    commit('SPINER_CLEAN');
+               }
+            });
+        },
+
+        /**
+         * Get movies by pagination
+         * 
+         * @param {*} commit object 
+         * @param id int id 
+         */
+
+        GET_MOVIES_PAGINATION({commit}, path_url) {
+            commit('SPINER_LOAD');
+            axios.get(path_url).then(response => {
+                // if status code 200
+                if(response.status === 200){                    
+                    commit('SET_MOVIES', response.data.data);
+                    commit('SPINER_CLEAN');
+               }
+            });
+        },
+
+        /**
+         * Delete movie
+         * 
+         * @param {*} id  uuid
+         * @param {*} key int
+         */
+        DELETE_MOVIE({commit}, {id, key}) {
+            commit('BUTTON_LOAD', id);
+            axios.delete('/api/admin/delete/movie/' + id).then(response => {
+              if (response.status === 200) {
+                alertify.logPosition('top right');
+                alertify.success('Successful Delete');  
+                commit('DELETE_MOVIE', key);
+                commit('BUTTON_CLEAN');
+              }
+            },error => {
+                alertify.logPosition('top right');
+                alertify.error(error.response.data.message);
+                commit('BUTTON_CLEAN');
+            });
+        },
+
+        /**
+         * Search movie
+         * 
+         * @param {string} string query 
+         */
+
+        GET_MOVIE_SEARCH({commit}, query) {
+            commit('SPINER_LOAD');
+            axios.post('/api/admin/get/movie/search', {query: query} ).then(response => {
+                // if status code 200
+                if(response.status === 200){                    
+                    commit('SET_SEARCH_MOVIES', response.data.data);
+                    commit('SPINER_CLEAN');
+               }
+            });
+        },
+
+        ADD_MOVIE_TO_TOP({commit}, {id,key}) {
+            axios.post('/api/admin/new/movie/top', {id: id}).then(response => {
+              if (response.status === 200) {
+                alertify.logPosition('top right');
+                alertify.success(response.data.message); 
+                commit('ADD_MOVIE_TO_TOP',{id,key});
+              }
+            },error => {
+                alertify.logPosition('top right');
+                alertify.error(error.response.data.message);
+            });
+        }
+    },
+    mutations: {
+
+        SET_MOVIES(state, data) {
+            state.data = data;
+        },
+
+        SET_SEARCH_MOVIES(state, data) {
+            state.data_search = data;
+        },
+
+        DELETE_MOVIE(state, key) {
+            state.data.movies.data.splice(key, 1);
+        },
+
+        ADD_MOVIE_TO_TOP(state, data) {
+            state.data.movies.data[data.key].movie_id = data.id;
+        },
+
+        BUTTON_LOAD(state, data) {
+            state.button_loading = data;
+        },
+
+        BUTTON_CLEAN(state) {
+            state.button_loading = false;
+        },
+
+        SPINER_LOAD(state) {
+            state.spinner_loading = true;
+        },
+
+        SPINER_CLEAN(state) {
+            state.spinner_loading = false;
+        }
+    },
+    getters: {}
+};
+export default module;
